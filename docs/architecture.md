@@ -18,7 +18,7 @@ flowchart LR
 | Component | Status |
 |---|---|
 | Download + CSV -> Parquet (bronze), local | Done (Milestone 1) |
-| dbt star schema on DuckDB | Done on a synthetic fixture (Milestone 1) |
+| dbt star schema on DuckDB | Done; run on real data for one department-year (Milestone 2) |
 | CI (lint, tests, dbt, terraform validate) | Done (Milestone 1) |
 | Terraform for S3 / Glue / Athena / budget | Written, **not applied** |
 | Glue Crawler / catalog, Athena queries | Planned (Milestone 3) |
@@ -37,10 +37,14 @@ erDiagram
         int date_key FK
         string commune_code FK
         string property_type_key FK
-        double sale_value_eur
+        decimal sale_value_eur
         double built_area_m2
+        int dwelling_units
         double land_area_m2
         double price_per_m2
+        boolean is_mixed_use
+        boolean is_multi_commune
+        boolean is_price_outlier
     }
 ```
 

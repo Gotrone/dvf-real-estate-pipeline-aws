@@ -20,13 +20,31 @@ models:
       - name: date_key
         data_tests:
           - not_null
-          - relationships: {to: ref('dim_date'), field: date_key}
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_key}
       - name: commune_code
         data_tests:
           - not_null
-          - relationships: {to: ref('dim_commune'), field: commune_code}
+          - relationships:
+              arguments: {to: ref('dim_commune'), field: commune_code}
       - name: property_type_key
         data_tests:
-          - relationships: {to: ref('dim_property_type'), field: property_type_key}
+          - relationships:
+              arguments: {to: ref('dim_property_type'), field: property_type_key}
       - name: sale_value_eur
         data_tests: [not_null]
+      - name: is_mixed_use
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments: {values: [true, false], quote: false}
+      - name: is_multi_commune
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments: {values: [true, false], quote: false}
+      - name: is_price_outlier
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments: {values: [true, false], quote: false}
