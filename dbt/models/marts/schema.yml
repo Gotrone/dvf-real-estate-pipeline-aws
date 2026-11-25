@@ -1,0 +1,32 @@
+version: 2
+models:
+  - name: dim_date
+    columns:
+      - name: date_key
+        data_tests: [unique, not_null]
+  - name: dim_commune
+    columns:
+      - name: commune_code
+        data_tests: [unique, not_null]
+  - name: dim_property_type
+    columns:
+      - name: property_type_key
+        data_tests: [unique, not_null]
+  - name: fact_sale
+    description: One row per sale (grain = id_mutation), price not duplicated.
+    columns:
+      - name: sale_id
+        data_tests: [unique, not_null]
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: commune_code
+        data_tests:
+          - not_null
+          - relationships: {to: ref('dim_commune'), field: commune_code}
+      - name: property_type_key
+        data_tests:
+          - relationships: {to: ref('dim_property_type'), field: property_type_key}
+      - name: sale_value_eur
+        data_tests: [not_null]

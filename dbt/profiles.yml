@@ -1,0 +1,9 @@
+# Local profile: DuckDB reads the Parquet bronze layer. An Athena profile (dbt-athena)
+# is planned for the AWS milestone; the SQL is kept to the common subset where possible.
+dvf:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: ../data/dvf.duckdb
+      threads: 4

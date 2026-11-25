@@ -1,0 +1,22 @@
+[project]
+name = "dvf-pipeline"
+version = "0.1.0"
+description = "Ingestion and modelling of French property transactions (DVF) for an AWS lakehouse."
+requires-python = ">=3.11"
+dependencies = ["duckdb>=1.1", "requests>=2.31"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6", "dbt-duckdb>=1.9"]
+
+[project.scripts]
+dvf = "dvf_pipeline.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
