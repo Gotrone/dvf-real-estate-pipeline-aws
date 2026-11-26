@@ -9,6 +9,30 @@ with dbt, Terraform and GitHub Actions.
 > and one year (Herault, 2024), not on the full dataset. **Nothing is deployed on AWS yet.**
 > See the roadmap below.
 
+## Goal
+
+Turn the raw, messy French property transaction file (DVF) into a clean, tested, queryable
+dataset, using the same building blocks as a production data platform on AWS. The questions
+the final model is meant to answer with plain SQL:
+
+- What is the median price per m² by commune, property type (house or apartment) and year?
+- How many sales happen per commune and per month?
+- Which sales are atypical (mixed use, several communes, implausible price) and should be
+  excluded from price analyses?
+
+The project is also a learning exercise: its purpose is to practise lakehouse layering,
+data modelling, data-quality testing, infrastructure as code and CI on real, imperfect data.
+
+### Pipeline steps
+
+| # | Step | What it does | Local (today) | On AWS (planned) |
+|---|---|---|---|---|
+| 1 | Ingestion | Download the official DVF CSV from data.gouv.fr, one file per department and year | `dvf download` | Same script, files land in S3 `raw/` |
+| 2 | Storage | Convert to Parquet, partitioned by year and department (bronze layer) | `dvf bronze` to local Parquet | S3 `bronze/`, registered in the Glue Data Catalog |
+| 3 | Transformation | Type the columns and clean them with dbt: deduplicated dwellings and land, prices as `decimal(14,2)`, flags for mixed-use, multi-commune and price-outlier sales, plus data-quality tests | dbt on DuckDB | dbt on Athena |
+| 4 | Modelling and querying | Star schema: `fact_sale` with `dim_date`, `dim_commune`, `dim_property_type`, queried in SQL | DuckDB | Athena over S3 `gold/` |
+| 5 | Orchestration | Run the steps on a schedule | Manual commands | Airflow (later) |
+
 ## Architecture
 
 ```mermaid
