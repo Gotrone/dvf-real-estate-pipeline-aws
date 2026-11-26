@@ -16,7 +16,7 @@ def test_bronze_is_partitioned_and_complete(tmp_path):
     out = csv_to_bronze(FIXTURE, tmp_path, 2024, "34")
     assert out.parent.as_posix().endswith("year=2024/department=34")
     n = duckdb.sql(f"select count(*) from read_parquet('{out}')").fetchall()[0][0]
-    assert n == 8  # 8 data lines in the fixture
+    assert n == 21  # 21 data lines in the fixture
 
 
 def test_bronze_keeps_all_columns_as_text(tmp_path):
