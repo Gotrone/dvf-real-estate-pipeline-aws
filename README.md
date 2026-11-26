@@ -20,6 +20,9 @@ the final model is meant to answer with plain SQL:
 - Which sales are atypical (mixed use, several communes, implausible price) and should be
   excluded from price analyses?
 
+No analysis queries are published yet, and only 2024 has been processed, so comparing years
+is still to come.
+
 The project is also a learning exercise: its purpose is to practise lakehouse layering,
 data modelling, data-quality testing, infrastructure as code and CI on real, imperfect data.
 
@@ -27,9 +30,9 @@ data modelling, data-quality testing, infrastructure as code and CI on real, imp
 
 | # | Step | What it does | Local (today) | On AWS (planned) |
 |---|---|---|---|---|
-| 1 | Ingestion | Download the official DVF CSV from data.gouv.fr, one file per department and year | `dvf download` | Same script, files land in S3 `raw/` |
+| 1 | Ingestion | Download the geolocated DVF CSV (derived from the official DVF data) from data.gouv.fr, one file per department and year | `dvf download` | Files uploaded to S3 `raw/` (upload not written yet) |
 | 2 | Storage | Convert to Parquet, partitioned by year and department (bronze layer) | `dvf bronze` to local Parquet | S3 `bronze/`, registered in the Glue Data Catalog |
-| 3 | Transformation | Type the columns and clean them with dbt: deduplicated dwellings and land, prices as `decimal(14,2)`, flags for mixed-use, multi-commune and price-outlier sales, plus data-quality tests | dbt on DuckDB | dbt on Athena |
+| 3 | Transformation | With dbt: type the columns in staging (prices as `decimal(14,2)`), then, while building `fact_sale`, deduplicate dwellings and land and flag mixed-use, multi-commune and price-outlier sales, with data-quality tests | dbt on DuckDB | dbt on Athena |
 | 4 | Modelling and querying | Star schema: `fact_sale` with `dim_date`, `dim_commune`, `dim_property_type`, queried in SQL | DuckDB | Athena over S3 `gold/` |
 | 5 | Orchestration | Run the steps on a schedule | Manual commands | Airflow (later) |
 
