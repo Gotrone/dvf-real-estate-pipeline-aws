@@ -4,10 +4,10 @@ Data pipeline on French property transactions ([DVF open data](https://www.data.
 modelled as a star schema and designed for an AWS lakehouse (S3, Glue Data Catalog, Athena),
 with dbt, Terraform and GitHub Actions.
 
-> **Status: work in progress (Milestone 2 of 6).** The ingestion, the star-schema models and
-> the CI run locally on DuckDB. The pipeline has been run on real data for one department
-> and one year (Herault, 2024), not on the full dataset. **Nothing is deployed on AWS yet.**
-> See the roadmap below.
+> **Status: work in progress (Milestone 3 of 6).** The star-schema models and the CI run on
+> DuckDB, on real data for one department and one year (Herault, 2024), not on the full
+> dataset. The AWS base (S3, Glue database, Athena workgroup, budget) is deployed, and the
+> bronze layer can be queried in Athena. **dbt does not run on AWS yet.** See the roadmap below.
 
 ## Goal
 
@@ -28,7 +28,7 @@ data modelling, data-quality testing, infrastructure as code and CI on real, imp
 
 ### Pipeline steps
 
-| # | Step | What it does | Local (today) | On AWS (planned) |
+| # | Step | What it does | Local (today) | On AWS (bronze done, rest planned) |
 |---|---|---|---|---|
 | 1 | Ingestion | Download the geolocated DVF CSV (derived from the official DVF data) from data.gouv.fr, one file per department and year | `dvf download` | Files uploaded to S3 `raw/` (upload not written yet) |
 | 2 | Storage | Convert to Parquet, partitioned by year and department (bronze layer) | `dvf bronze` to local Parquet | S3 `bronze/`, registered in the Glue Data Catalog |
@@ -113,21 +113,46 @@ identical attributes could still be merged, and repeated lines could still be co
 Results have not been validated against an external reference. Sales that mix houses and
 apartments are not flagged: their price per m² blends both.
 
+## AWS deployment (bronze layer)
+
+Deployed manually from AWS CloudShell in `eu-north-1`. The Terraform default region is
+`eu-west-3`, but the AWS free plan used here restricted the project to `eu-north-1`, so the
+region is passed as a variable: `-var region=eu-north-1`.
+
+1. `terraform apply` created 7 resources: the S3 bucket with its public access block,
+   encryption and expiry rule for query results, the Glue database, the Athena workgroup and
+   the monthly budget.
+2. The bronze Parquet file for Herault 2024 was built in CloudShell with the same
+   `dvf download` and `dvf bronze` code, then copied to
+   `s3://<lake-bucket>/bronze/year=2024/department=34/`.
+3. The table was declared with [`sql/athena/01_create_bronze_table.sql`](sql/athena/01_create_bronze_table.sql)
+   (no Glue crawler; the table is not managed by Terraform).
+4. [`sql/athena/02_check_volumes.sql`](sql/athena/02_check_volumes.sql) reconciles Athena
+   with the local DuckDB run:
+
+| Check | Local | Athena | Data scanned by the query |
+|---|---|---|---|
+| Raw lines / distinct mutations | 69,651 / 29,565 | 69,651 / 29,565 | 49,167 bytes |
+| Eligible lines / sales | 60,775 / 26,652 | 60,775 / 26,652 | 178,403 bytes |
+
+These checks cover the bronze layer only. `fact_sale` and price-per-m² figures are not
+available in Athena yet.
+
 ## Roadmap
 
 | # | Milestone | State |
 |---|---|---|
 | 1 | Local ingestion, bronze Parquet, dbt star schema, tests, CI | Done (on fixture) |
 | 2 | Run on real DVF for one department, data-quality profiling and fixes | Done on one department-year (heuristic dedup and outlier rules, no external validation) |
-| 3 | AWS: apply Terraform, upload bronze to S3, Glue catalog, Athena queries | Next |
-| 4 | dbt on Athena (`dbt-athena`), incremental models | Planned |
+| 3 | AWS: apply Terraform, upload bronze to S3, Glue catalog, Athena queries | Done on one department-year, manual steps |
+| 4 | dbt on Athena (`dbt-athena`), incremental models | Next |
 | 5 | Airflow orchestration (local Docker first) | Planned |
 | 6 | Cost report, docs, optional Spark/Glue job comparison | Planned |
 
 ## Cost control
 
-Terraform sets an Athena per-query scan cap (1 GiB) and a monthly budget alert. Terraform has
-**not** been applied; deploying is a manual step (see [terraform/README.md](terraform/README.md)).
+Terraform sets an Athena per-query scan cap (1 GiB) and a monthly budget alert. The alert
+does not block spending. Deploying is a manual step (see [terraform/README.md](terraform/README.md)).
 
 ## Layout
 
@@ -136,6 +161,7 @@ src/dvf_pipeline/   download + CSV -> Parquet
 dbt/                staging + marts (DuckDB profile)
 terraform/          S3, Glue database, Athena workgroup, budget
 tests/              pytest + synthetic fixture
+sql/athena/         Athena table definition and checks
 .github/workflows/  CI
 ```
 

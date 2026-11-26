@@ -20,8 +20,9 @@ flowchart LR
 | Download + CSV -> Parquet (bronze), local | Done (Milestone 1) |
 | dbt star schema on DuckDB | Done; run on real data for one department-year (Milestone 2) |
 | CI (lint, tests, dbt, terraform validate) | Done (Milestone 1) |
-| Terraform for S3 / Glue / Athena / budget | Written, **not applied** |
-| Glue Crawler / catalog, Athena queries | Planned (Milestone 3) |
+| Terraform for S3 / Glue / Athena / budget | Applied in `eu-north-1` (Milestone 3) |
+| Bronze on S3, Glue catalog table, Athena queries | Done by hand for one department-year, no crawler (Milestone 3) |
+| S3 raw upload | Not written yet |
 | dbt on Athena | Planned (Milestone 4) |
 | Airflow orchestration | Planned (Milestone 5) |
 
